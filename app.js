@@ -6,6 +6,10 @@ const expressLayouts = require('express-ejs-layouts');
 const { loadContact, cekDuplikat, addContact, findContact, updateContact, deleteContact } = require('./utils/contacts');
 // mengimport fungsi untuk memvalidasi data
 const { body, check, validationResult } = require('express-validator');
+// mengimport module untuk memberikan konfirmasi pesan jika berhasil
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
+const flash = require('connect-flash');
 // memasukkan sebuah fungsi express ke variabel app
 const app = express();
 
@@ -18,6 +22,17 @@ app.set('view engine', 'ejs');
 app.use(expressLayouts);
 // menggunakan middleware untuk mendapatkan data req.body
 app.use(express.urlencoded({ extended: false }));
+// Konfigurasi flash
+app.use(cookieParser('secret'));
+app.use(
+  session({
+    cookie: { maxAge: 6000 },
+    secret: 'secret',
+    resave: true,
+    saveUninitialized: true,
+  })
+);
+app.use(flash());
 
 // membuat route /
 app.get('/', (req, res) => {
@@ -49,6 +64,7 @@ app.get('/contact', (req, res) => {
     layout: 'layouts/main-layout',
     title: 'contact page',
     contacts,
+    pesan: req.flash('pesan'),
   });
 });
 
@@ -92,6 +108,7 @@ app.post(
     } else {
       // jika tidak ada error maka tambahkan contact yang direquest dan alihkan ke route /contact
       addContact(req.body);
+      req.flash('pesan', 'Data contact berhasil ditambahkan!');
       res.redirect('/contact');
     }
   }
@@ -156,6 +173,7 @@ app.post(
     } else {
       // jika tidak ada error maka update contact dan alihkan ke route /contact
       updateContact(req.body);
+      req.flash('pesan', 'Data contact berhasil diubah!');
       res.redirect('/contact');
     }
   }
@@ -175,6 +193,7 @@ app.get('/contact/delete/:name', (req, res) => {
   } else {
     // jika contact ditemukkan maka hapus contact berdasarkan name yang dikirimkan dan alihkan ke route /contact
     deleteContact(req.params.name);
+    req.flash('pesan', 'Data contact berhasil dihapus!');
     res.redirect('/contact');
   }
 });
